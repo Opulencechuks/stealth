@@ -33,14 +33,14 @@ export function EmailList({
           <h2 className="text-[13px] font-semibold leading-5 tracking-normal text-foreground">{folderLabel}</h2>
           <p className="text-[11px] leading-4 text-muted-foreground">{filtered.length} conversations</p>
         </div>
-        <div className="flex items-center gap-1.5 rounded-[6px] border border-white/12 bg-gradient-to-b from-white/[0.08] to-white/[0.03] p-1 text-[11px] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]">
+        <div className="flex items-center gap-1 rounded-[6px] border border-white/12 bg-gradient-to-b from-white/[0.08] to-white/[0.03] p-0.5 text-[10px] shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.12)]">
           {(["all", "unread", "flagged"] as const).map((t) => (
             <motion.button
               key={t}
               whileTap={{ scale: 0.96 }}
               onClick={() => setActiveTab(t)}
               className={cn(
-                "relative rounded-[5px] px-3 py-1.5 font-medium transition capitalize",
+                "relative rounded-[5px] px-2.5 py-1 font-medium transition capitalize",
                 activeTab === t
                   ? "bg-gradient-to-b from-white/[0.12] to-white/[0.06] text-foreground shadow-[0_4px_12px_-6px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.16)]"
                   : "text-muted-foreground hover:text-foreground hover:bg-white/[0.04]"
