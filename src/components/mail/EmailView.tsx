@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { EventMailCard } from "@/features/calendar";
 import type { Email } from "./data";
+import { OTPCard, detectOtp } from "./OTPCard";
 
 export function EmailView({ email }: { email: Email | null }) {
   const [replyMenuOpen, setReplyMenuOpen] = useState(false);
@@ -149,6 +150,11 @@ export function EmailView({ email }: { email: Email | null }) {
                 </div>
 
                 {email.event ? <EventMailCard event={email.event} /> : null}
+
+                {(() => {
+                  const otp = detectOtp(email.body);
+                  return otp ? <OTPCard code={otp} /> : null;
+                })()}
 
                 <ReaderBody body={email.body} />
 
