@@ -65,8 +65,9 @@ export function Compose({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  
-  const aiSuggestion = "Confirming Friday's review at 10am — let me know if that still works for you.";
+
+  const aiSuggestion =
+    "Confirming Friday's review at 10am — let me know if that still works for you.";
 
   // Hydrate / reset form when opening or closing
   useEffect(() => {
@@ -74,6 +75,7 @@ export function Compose({
       setTo(initialTo);
       setSubject(initialSubject);
       setBody(initialBody);
+      setPostage(initialPostage);
     } else {
       setTo("");
       setSubject("");
