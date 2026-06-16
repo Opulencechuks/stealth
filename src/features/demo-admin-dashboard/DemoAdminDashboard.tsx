@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import React, { useState } from "react";
 import {
   Activity,
   BarChart3,
@@ -6,6 +6,8 @@ import {
   Mail,
   Shield,
   Users,
+  Upload,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -14,42 +16,17 @@ import type {
   DemoAdminDashboardProps,
   StatCard,
 } from "./types";
+import { validateAndNormalizeDemoData, serializeDemoData } from "./utils/demoDataIo";
+import { defaultDemoDashboardData } from "./fixtures/demoDataFixtures";
+import type { DemoAccount, DemoMail, DemoAuditEvent, DemoDashboardData } from "./types/demoData";
 
-// ─── Deterministic fake data ──────────────────────────────────────────────────
+// ─── Nav items mapping ────────────────────────────────────────────────────────
 
 const NAV_ITEMS: DashboardNavItem[] = [
   { id: "overview", label: "Overview", description: "High-level demo system status" },
   { id: "accounts", label: "Accounts", description: "Demo Stellar accounts and balances" },
   { id: "mail", label: "Mail", description: "Demo mail fixtures and delivery states" },
   { id: "audit", label: "Audit", description: "Demo protocol event log" },
-];
-
-const OVERVIEW_STATS: StatCard[] = [
-  { label: "Active Accounts", value: "12", delta: "+2" },
-  { label: "Messages Sent", value: "847", delta: "+12%" },
-  { label: "Pending Requests", value: "3", delta: "-1" },
-  { label: "Total Postage (XLM)", value: "1,240.5", delta: "+45.2" },
-];
-
-const ACCOUNTS_FAKE: { name: string; address: string; balance: string; type: string }[] = [
-  { name: "Alice Demo", address: "GABCD...1234", balance: "500.0 XLM", type: "User" },
-  { name: "Bob Demo", address: "GBCDE...2345", balance: "320.0 XLM", type: "User" },
-  { name: "Relay East", address: "GCDEF...3456", balance: "1,200.0 XLM", type: "Relay" },
-  { name: "Relay West", address: "GDEFG...4567", balance: "980.0 XLM", type: "Relay" },
-];
-
-const MAIL_FIXTURES: { subject: string; status: string; folder: string }[] = [
-  { subject: "Welcome to Stealth", status: "delivered", folder: "inbox" },
-  { subject: "Invoice #1042", status: "pending", folder: "requests" },
-  { subject: "Meeting notes", status: "delivered", folder: "inbox" },
-  { subject: "Newsletter #47", status: "held", folder: "spam" },
-];
-
-const AUDIT_EVENTS_FAKE: { action: string; actor: string; timestamp: string }[] = [
-  { action: "Session started", actor: "demo-user-1", timestamp: "2026-06-16T09:00:00Z" },
-  { action: "Policy default changed to request", actor: "demo-user-1", timestamp: "2026-06-16T09:05:00Z" },
-  { action: "Sender approved: alice*stealth.xyz", actor: "demo-user-1", timestamp: "2026-06-16T09:10:00Z" },
-  { action: "Postage refunded for msg_abc123", actor: "system", timestamp: "2026-06-16T09:12:00Z" },
 ];
 
 // ─── Section icon map ─────────────────────────────────────────────────────────
@@ -63,14 +40,14 @@ const SECTION_ICON: Record<DashboardSection, React.ElementType> = {
 
 // ─── Content region components ────────────────────────────────────────────────
 
-function OverviewContent() {
+function OverviewContent({ stats }: { stats: StatCard[] }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
-        Summary of the demo environment. All data is synthetic and resets on each page load.
+        Summary of the demo environment. All data is synthetic and updates dynamically on imports.
       </p>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {OVERVIEW_STATS.map((stat) => (
+        {stats.map((stat) => (
           <div
             key={stat.label}
             className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
@@ -87,7 +64,7 @@ function OverviewContent() {
   );
 }
 
-function AccountsContent() {
+function AccountsContent({ accounts }: { accounts: DemoAccount[] }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -104,16 +81,24 @@ function AccountsContent() {
             </tr>
           </thead>
           <tbody>
-            {ACCOUNTS_FAKE.map((acct) => (
-              <tr key={acct.address} className="border-b border-white/[0.04] last:border-0">
-                <td className="px-4 py-3 font-medium text-foreground">{acct.name}</td>
-                <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                  {acct.address}
+            {accounts.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
+                  No accounts found. Import data to populate.
                 </td>
-                <td className="px-4 py-3 tabular-nums text-foreground">{acct.balance}</td>
-                <td className="px-4 py-3 text-muted-foreground">{acct.type}</td>
               </tr>
-            ))}
+            ) : (
+              accounts.map((acct, idx) => (
+                <tr key={`${acct.address}-${idx}`} className="border-b border-white/[0.04] last:border-0">
+                  <td className="px-4 py-3 font-medium text-foreground">{acct.name}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
+                    {acct.address}
+                  </td>
+                  <td className="px-4 py-3 tabular-nums text-foreground">{acct.balance}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{acct.type}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -121,7 +106,7 @@ function AccountsContent() {
   );
 }
 
-function MailContent() {
+function MailContent({ mail }: { mail: DemoMail[] }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
@@ -137,27 +122,32 @@ function MailContent() {
             </tr>
           </thead>
           <tbody>
-            {MAIL_FIXTURES.map((mail, i) => (
-              <tr key={i} className="border-b border-white/[0.04] last:border-0">
-                <td className="px-4 py-3 font-medium text-foreground">{mail.subject}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                      mail.status === "delivered" &&
-                        "bg-emerald-500/10 text-emerald-400",
-                      mail.status === "pending" &&
-                        "bg-amber-500/10 text-amber-400",
-                      mail.status === "held" &&
-                        "bg-rose-500/10 text-rose-400",
-                    )}
-                  >
-                    {mail.status}
-                  </span>
+            {mail.length === 0 ? (
+              <tr>
+                <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                  No mail fixtures found. Import data to populate.
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">{mail.folder}</td>
               </tr>
-            ))}
+            ) : (
+              mail.map((m, i) => (
+                <tr key={i} className="border-b border-white/[0.04] last:border-0">
+                  <td className="px-4 py-3 font-medium text-foreground">{m.subject}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                        m.status === "delivered" && "bg-emerald-500/10 text-emerald-400",
+                        m.status === "pending" && "bg-amber-500/10 text-amber-400",
+                        m.status === "held" && "bg-rose-500/10 text-rose-400"
+                      )}
+                    >
+                      {m.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{m.folder}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -165,53 +155,122 @@ function MailContent() {
   );
 }
 
-function AuditContent() {
+function AuditContent({ audit }: { audit: DemoAuditEvent[] }) {
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted-foreground">
         Recent demo protocol events. No real user data or message body content is recorded.
       </p>
       <div className="space-y-2">
-        {AUDIT_EVENTS_FAKE.map((evt, i) => (
-          <div
-            key={i}
-            className="flex items-start gap-3 rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-3"
-          >
-            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.04]">
-              <Shield className="h-3 w-3 text-muted-foreground" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-foreground">{evt.action}</p>
-              <p className="text-xs text-muted-foreground">
-                {evt.actor} &middot; {new Date(evt.timestamp).toLocaleTimeString()}
-              </p>
-            </div>
+        {audit.length === 0 ? (
+          <div className="rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-8 text-center text-muted-foreground">
+            No audit events found. Import data to populate.
           </div>
-        ))}
+        ) : (
+          audit.map((evt, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-3 rounded-lg border border-white/[0.04] bg-white/[0.01] px-4 py-3"
+            >
+              <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/[0.04]">
+                <Shield className="h-3 w-3 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-foreground">{evt.action}</p>
+                <p className="text-xs text-muted-foreground">
+                  {evt.actor} &middot; {new Date(evt.timestamp).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-const SECTION_CONTENT: Record<DashboardSection, () => ReactNode> = {
-  overview: OverviewContent,
-  accounts: AccountsContent,
-  mail: MailContent,
-  audit: AuditContent,
-};
-
 // ─── Dashboard Shell ──────────────────────────────────────────────────────────
 
 export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
+  const [data, setData] = useState<DemoDashboardData>(defaultDemoDashboardData);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
   const Icon = SECTION_ICON[activeSection];
-  const ContentComponent = SECTION_CONTENT[activeSection];
+
+  // Dynamic calculations for Overview section
+  const activeAccountsCount = data.accounts.length;
+  const messagesCount = data.mail.length;
+  const pendingCount = data.mail.filter((m) => m.status === "pending").length;
+  const totalBalance = data.accounts.reduce((sum, acc) => {
+    const val = parseFloat(acc.balance.replace(/[^\d.]/g, ""));
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
+
+  const overviewStats: StatCard[] = [
+    { label: "Active Accounts", value: activeAccountsCount.toString(), delta: "+2" },
+    { label: "Messages Sent", value: messagesCount.toString(), delta: "+12%" },
+    { label: "Pending Requests", value: pendingCount.toString(), delta: "-1" },
+    { label: "Total Balance (XLM)", value: totalBalance.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), delta: "+45.2" },
+  ];
+
+  const handleExport = () => {
+    try {
+      const jsonStr = serializeDemoData(data);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "demo-dashboard-data.json";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setSuccessMsg("Demo data exported successfully.");
+      setErrorMsg(null);
+    } catch (err: any) {
+      setErrorMsg(`Failed to export data: ${err.message}`);
+      setSuccessMsg(null);
+    }
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result;
+        if (typeof text !== "string") {
+          throw new Error("Failed to read file content as text");
+        }
+        const parsedData = validateAndNormalizeDemoData(text);
+        setData(parsedData);
+        setSuccessMsg("Demo data imported and normalized successfully.");
+        setErrorMsg(null);
+      } catch (err: any) {
+        setErrorMsg(`Import failed: ${err.message}`);
+        setSuccessMsg(null);
+      } finally {
+        // Reset file input value so same file can be selected again
+        event.target.value = "";
+      }
+    };
+    reader.onerror = () => {
+      setErrorMsg("Failed to read file.");
+      setSuccessMsg(null);
+      event.target.value = "";
+    };
+    reader.readAsText(file);
+  };
 
   return (
     <div
       className={cn(
         "flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-black/60 backdrop-blur-xl",
-        className,
+        className
       )}
     >
       {/* ── Header ── */}
@@ -227,9 +286,39 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
             </p>
           </div>
         </div>
-        <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400">
-          Demo
-        </span>
+
+        <div className="flex items-center gap-2">
+          {/* Hidden Import file input */}
+          <input
+            type="file"
+            id="demo-data-import-input"
+            accept=".json"
+            className="hidden"
+            onChange={handleImport}
+          />
+
+          <button
+            onClick={() => document.getElementById("demo-data-import-input")?.click()}
+            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-foreground transition cursor-pointer"
+            title="Import demo data from a JSON file"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            Import
+          </button>
+
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-foreground transition cursor-pointer"
+            title="Export current demo data as a JSON file"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export
+          </button>
+
+          <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400">
+            Demo
+          </span>
+        </div>
       </div>
 
       {/* ── Navigation slots ── */}
@@ -249,10 +338,10 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
               aria-label={item.description}
               onClick={() => setActiveSection(item.id)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer",
                 isActive
                   ? "bg-white/[0.08] text-foreground"
-                  : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
+                  : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
               )}
             >
               <NavIcon className="h-3.5 w-3.5" />
@@ -265,6 +354,30 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
       {/* ── Content region ── */}
       <div className="flex-1 overflow-y-auto p-6" role="tabpanel" aria-label={`${activeSection} section`}>
         <div className="mx-auto max-w-4xl">
+          {/* Error and Success Alert Banners */}
+          {errorMsg && (
+            <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400 flex items-center justify-between">
+              <span>{errorMsg}</span>
+              <button
+                onClick={() => setErrorMsg(null)}
+                className="text-red-400 hover:text-red-300 font-bold ml-2 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          {successMsg && (
+            <div className="mb-6 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400 flex items-center justify-between animate-fade-in">
+              <span>{successMsg}</span>
+              <button
+                onClick={() => setSuccessMsg(null)}
+                className="text-emerald-400 hover:text-emerald-300 font-bold ml-2 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {/* Section header */}
           <div className="mb-6 flex items-center gap-2">
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -273,9 +386,13 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
             </h3>
           </div>
 
-          <ContentComponent />
+          {activeSection === "overview" && <OverviewContent stats={overviewStats} />}
+          {activeSection === "accounts" && <AccountsContent accounts={data.accounts} />}
+          {activeSection === "mail" && <MailContent mail={data.mail} />}
+          {activeSection === "audit" && <AuditContent audit={data.audit} />}
         </div>
       </div>
     </div>
   );
 }
+
