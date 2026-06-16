@@ -5,7 +5,8 @@ import { Sidebar } from "@/components/mail/Sidebar";
 import { Topbar } from "@/components/mail/Topbar";
 import { EmailList } from "@/components/mail/EmailList";
 import { EmailView } from "@/components/mail/EmailView";
-import { Compose, type ComposeSubmission } from "@/components/mail/Compose";
+import { Compose } from "@/components/mail/Compose";
+import type { ComposeSubmission } from "@/components/mail/composeValidation";
 import { RightPanel, type ContextAction } from "@/components/mail/RightPanel";
 import { SettingsModal } from "@/components/mail/SettingsModal";
 import { LandingScreen } from "@/components/landing/LandingScreen";
@@ -270,6 +271,8 @@ function MailApp({ isDemoMode, onSignOut }: { isDemoMode?: boolean; onSignOut?: 
     },
     onCalendarResponseChange: calendar.updateResponse,
     onCalendarReminderChange: calendar.updateReminder,
+    onInlineSubmit: (_e: Email, submission: ComposeSubmission) => handleComposeSubmit(submission),
+    minimumPostage: preferences.minimumPostage,
     onSendReadReceipt: (e: Email) => {
       updateEmail(e.id, { receiptState: "sent" });
       showToast("Read receipt sent");

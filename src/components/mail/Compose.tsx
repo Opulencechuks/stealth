@@ -12,26 +12,18 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EmojiPicker } from "./EmojiPicker";
 import { cn } from "@/lib/utils";
 
-type Attachment = {
-  name: string;
-  size: string;
-  type: "file" | "image";
-};
-
-export type ComposeSubmission = {
-  to: string;
-  subject: string;
-  body: string;
-  attachments: Attachment[];
-  encrypted: boolean;
-  receipt: boolean;
-  postage: string;
-  scheduled: boolean;
-};
+import {
+  getRecipientReadiness,
+  validateComposeDraft,
+  type Attachment,
+  type ComposeMode,
+  type ComposeSubmission,
+  type RecipientReadiness,
+} from "./composeValidation";
 
 export function Compose({
   open,
@@ -41,6 +33,8 @@ export function Compose({
   initialSubject = "",
   initialBody = "",
   initialPostage = "0.0001",
+  mode = "compose",
+  blockedRecipients = [],
   onSubmit,
 }: {
   open: boolean;
@@ -50,6 +44,8 @@ export function Compose({
   initialSubject?: string;
   initialBody?: string;
   initialPostage?: string;
+  mode?: ComposeMode;
+  blockedRecipients?: string[];
   onSubmit?: (submission: ComposeSubmission) => void;
 }) {
   const [to, setTo] = useState(initialTo);
@@ -86,7 +82,6 @@ export function Compose({
       setReceipt(true);
       setPostage(initialPostage);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, initialTo, initialSubject, initialBody, initialPostage]);
 
   useEffect(() => {
@@ -106,23 +101,26 @@ export function Compose({
     };
     if (open) window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose, emojiOpen]);
+  }, [open, onClose, emojiOpen, insertAtCursor]);
 
-  const insertAtCursor = (text: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+  const insertAtCursor = useCallback(
+    (text: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const newValue = body.slice(0, start) + text + body.slice(end);
-    setBody(newValue);
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const newValue = body.slice(0, start) + text + body.slice(end);
+      setBody(newValue);
 
-    // Set cursor position after inserted text
-    setTimeout(() => {
-      textarea.selectionStart = textarea.selectionEnd = start + text.length;
-      textarea.focus();
-    }, 0);
-  };
+      // Set cursor position after inserted text
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + text.length;
+        textarea.focus();
+      }, 0);
+    },
+    [body],
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, type: "file" | "image") => {
     const files = e.target.files;
@@ -143,8 +141,9 @@ export function Compose({
   };
 
   const handleSend = async (scheduled = false) => {
-    if (!to.trim()) {
-      onShowToast?.("Please enter a recipient");
+    const validationError = validateComposeDraft({ to, body, postage, blockedRecipients });
+    if (validationError) {
+      onShowToast?.(validationError);
       return;
     }
     if (!subject.trim()) {
@@ -166,6 +165,7 @@ export function Compose({
       receipt,
       postage,
       scheduled,
+      mode: scheduled ? "schedule" : mode,
     });
     setIsSending(false);
     onClose();
@@ -201,7 +201,11 @@ export function Compose({
           >
             <div className="flex items-center justify-between border-b border-white/5 px-4 py-3">
               <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                New message
+                {mode === "compose"
+                  ? "New message"
+                  : mode === "schedule"
+                    ? "Schedule send"
+                    : mode.replace("-", " ")}
               </div>
               <button
                 onClick={onClose}
@@ -212,6 +216,9 @@ export function Compose({
             </div>
             <div className="space-y-0 px-4">
               <Field label="To" placeholder="recipients@…" value={to} onChange={setTo} />
+              <RecipientReadinessChips
+                recipients={getRecipientReadiness(to, postage, blockedRecipients)}
+              />
               <Field label="Subject" placeholder="Subject" value={subject} onChange={setSubject} />
             </div>
             <div className="px-4 pb-2">
@@ -388,6 +395,31 @@ export function Compose({
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+function RecipientReadinessChips({ recipients }: { recipients: RecipientReadiness[] }) {
+  if (!recipients.length) return null;
+
+  return (
+    <div className="flex flex-wrap gap-1.5 border-b border-white/5 py-2 pl-[76px]">
+      {recipients.map((recipient) => (
+        <span
+          key={recipient.address}
+          title={recipient.message}
+          className={cn(
+            "rounded-full border px-2 py-1 text-[10px]",
+            recipient.policy === "blocked"
+              ? "border-red-300/20 bg-red-300/[0.06] text-red-200"
+              : recipient.postage === "ready"
+                ? "border-emerald-200/20 bg-emerald-200/[0.06] text-emerald-100"
+                : "border-amber-200/20 bg-amber-200/[0.06] text-amber-100",
+          )}
+        >
+          {recipient.address} · {recipient.policy} · postage {recipient.postage}
+        </span>
+      ))}
+    </div>
   );
 }
 

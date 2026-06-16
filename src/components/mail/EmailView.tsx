@@ -3,6 +3,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Archive,
   BadgeCheck,
+  CalendarClock,
+  CheckCheck,
+  Coins,
   Braces,
   Clock,
   File,
@@ -17,6 +20,7 @@ import {
   Sparkles,
   Star,
   Table2,
+  Send,
   Trash2,
   X,
   type LucideIcon,
@@ -27,11 +31,20 @@ import { OTPCard, detectOtp } from "@/features/otp";
 import { ConvertSenderButton, SenderBadge } from "@/features/sender-conversion";
 import { ProvenancePanel } from "./ProvenancePanel";
 import type { Email } from "./data";
+import {
+  getRecipientReadiness,
+  validateComposeDraft,
+  type Attachment,
+  type ComposeMode,
+  type ComposeSubmission,
+} from "./composeValidation";
 
 export type EmailViewActions = {
   onReply?: (email: Email, body?: string) => void;
   onReplyAll?: (email: Email) => void;
   onForward?: (email: Email) => void;
+  onInlineSubmit?: (email: Email, submission: ComposeSubmission) => void;
+  minimumPostage?: string;
   onArchive?: (email: Email) => void;
   onTrash?: (email: Email) => void;
   onToggleStar?: (email: Email) => void;
@@ -55,13 +68,11 @@ export function EmailView({
   actions?: EmailViewActions;
 }) {
   const [replyMenuOpen, setReplyMenuOpen] = useState(false);
-  const [quickReplyOpen, setQuickReplyOpen] = useState(false);
-  const [quickReplyText, setQuickReplyText] = useState("");
+  const [inlineMode, setInlineMode] = useState<ComposeMode | null>(null);
 
   useEffect(() => {
     setReplyMenuOpen(false);
-    setQuickReplyOpen(false);
-    setQuickReplyText("");
+    setInlineMode(null);
   }, [email?.id]);
 
   return (
@@ -128,7 +139,7 @@ export function EmailView({
                           whileTap={{ scale: 0.98 }}
                           onClick={() => {
                             setReplyMenuOpen(false);
-                            setQuickReplyOpen(true);
+                            setInlineMode("reply");
                           }}
                           className="w-full rounded-sm px-3 py-2 text-left text-xs text-foreground/90 transition hover:bg-white/[0.06]"
                         >
@@ -167,7 +178,11 @@ export function EmailView({
                     key={label}
                     whileTap={{ scale: 0.96 }}
                     whileHover={{ y: -1 }}
-                    onClick={onClick}
+                    onClick={() => {
+                      if (label === "Reply all") setInlineMode("reply-all");
+                      else if (label === "Forward") setInlineMode("forward");
+                      else onClick();
+                    }}
                     className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground"
                   >
                     <Icon className="h-3.5 w-3.5" />{" "}
@@ -319,54 +334,19 @@ export function EmailView({
             </div>
 
             <AnimatePresence>
-              {quickReplyOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 12 }}
-                  transition={{ duration: 0.2 }}
-                  className="border-t border-white/[0.07] bg-white/[0.02] px-5 py-3 backdrop-blur-md sm:px-7"
-                >
-                  <div className="mx-auto flex w-full max-w-[920px] items-end gap-2">
-                    <textarea
-                      value={quickReplyText}
-                      onChange={(e) => setQuickReplyText(e.target.value)}
-                      placeholder={`Reply to ${email.from}…`}
-                      rows={2}
-                      className="glow-ring flex-1 resize-none rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-white/20 focus:outline-none"
-                    />
-                    <div className="flex flex-col gap-1.5">
-                      <motion.button
-                        whileTap={{ scale: 0.96 }}
-                        onClick={() => {
-                          setQuickReplyOpen(false);
-                          setQuickReplyText("");
-                        }}
-                        className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
-                      >
-                        Cancel
-                      </motion.button>
-                      <motion.button
-                        whileTap={{ scale: 0.96 }}
-                        whileHover={{ y: -1 }}
-                        disabled={!quickReplyText.trim()}
-                        onClick={() => {
-                          actions.onReply?.(email, quickReplyText);
-                          setQuickReplyOpen(false);
-                          setQuickReplyText("");
-                        }}
-                        className={cn(
-                          "rounded-md border border-white/10 bg-white/[0.08] px-3 py-1.5 text-[11px] font-medium text-foreground transition",
-                          quickReplyText.trim()
-                            ? "hover:bg-white/[0.14]"
-                            : "cursor-not-allowed opacity-50",
-                        )}
-                      >
-                        Send
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
+              {inlineMode && (
+                <InlineReplyComposer
+                  email={email}
+                  mode={inlineMode}
+                  minimumPostage={actions.minimumPostage ?? "0.0001"}
+                  onCancel={() => setInlineMode(null)}
+                  onSubmit={(submission) => {
+                    actions.onInlineSubmit?.(email, submission);
+                    setInlineMode(null);
+                  }}
+                  onSchedule={() => setInlineMode("schedule")}
+                  onShowToast={actions.onShowToast}
+                />
               )}
             </AnimatePresence>
           </motion.div>
@@ -374,6 +354,179 @@ export function EmailView({
       </AnimatePresence>
     </section>
   );
+}
+
+function InlineReplyComposer({
+  email,
+  mode,
+  minimumPostage,
+  onCancel,
+  onSubmit,
+  onSchedule,
+  onShowToast,
+}: {
+  email: Email;
+  mode: ComposeMode;
+  minimumPostage: string;
+  onCancel: () => void;
+  onSubmit: (submission: ComposeSubmission) => void;
+  onSchedule: () => void;
+  onShowToast?: (message: string) => void;
+}) {
+  const isForward = mode === "forward";
+  const [to, setTo] = useState(isForward ? "" : email.email);
+  const [body, setBody] = useState(buildInlineBody(email, mode));
+  const [postage, setPostage] = useState(minimumPostage);
+  const [attachments, setAttachments] = useState<Attachment[]>(
+    isForward
+      ? (email.attachments ?? []).map((attachment) => ({
+          name: attachment.name,
+          size: attachment.size,
+          type: attachment.type === "image" ? "image" : "file",
+        }))
+      : [],
+  );
+  const subject = getInlineSubject(email.subject, mode);
+  const blockedRecipients = email.senderPolicy === "block" ? [email.email] : [];
+  const readiness = getRecipientReadiness(to, postage, blockedRecipients);
+
+  const submit = (scheduled = false) => {
+    const validationError = validateComposeDraft({ to, body, postage, blockedRecipients });
+    if (validationError) {
+      onShowToast?.(validationError);
+      return;
+    }
+
+    onSubmit({
+      to: to.trim(),
+      subject,
+      body,
+      attachments,
+      encrypted: true,
+      receipt: true,
+      postage,
+      scheduled,
+      mode: scheduled ? "schedule" : mode,
+    });
+    onShowToast?.(
+      scheduled
+        ? "Reply scheduled with postage reserved"
+        : `${mode === "forward" ? "Forward" : "Reply"} sent with ${postage} XLM postage`,
+    );
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 12 }}
+      transition={{ duration: 0.2 }}
+      className="border-t border-white/[0.07] bg-white/[0.02] px-5 py-3 backdrop-blur-md sm:px-7"
+    >
+      <div className="mx-auto w-full max-w-[920px] space-y-3">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+          <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 uppercase tracking-[0.16em] text-foreground/80">
+            Inline {mode.replace("-", " ")}
+          </span>
+          <span className="truncate">Context: {email.subject}</span>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <input
+            value={to}
+            onChange={(event) => setTo(event.target.value)}
+            placeholder={isForward ? "Forward to…" : "Reply to…"}
+            className="glow-ring rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-white/20 focus:outline-none"
+          />
+          <label className="flex items-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-foreground">
+            <Coins className="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              value={postage}
+              onChange={(event) => setPostage(event.target.value)}
+              inputMode="decimal"
+              aria-label="Reply postage"
+              className="w-16 bg-transparent font-mono outline-none"
+            />
+            XLM
+          </label>
+        </div>
+        {readiness.length ? (
+          <div className="flex flex-wrap gap-1.5">
+            {readiness.map((recipient) => (
+              <span
+                key={recipient.address}
+                title={recipient.message}
+                className={cn(
+                  "rounded-full border px-2 py-1 text-[10px]",
+                  recipient.policy === "blocked"
+                    ? "border-red-300/20 bg-red-300/[0.06] text-red-200"
+                    : recipient.postage === "ready"
+                      ? "border-emerald-200/20 bg-emerald-200/[0.06] text-emerald-100"
+                      : "border-amber-200/20 bg-amber-200/[0.06] text-amber-100",
+                )}
+              >
+                {recipient.address} · {recipient.policy} · postage {recipient.postage}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <textarea
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          rows={5}
+          className="glow-ring w-full resize-none rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus:border-white/20 focus:outline-none"
+        />
+        {attachments.length ? (
+          <div className="flex flex-wrap gap-1.5">
+            {attachments.map((attachment) => (
+              <span
+                key={attachment.name}
+                className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] text-muted-foreground"
+              >
+                <Paperclip className="h-3 w-3" /> {attachment.name} · {attachment.size}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSchedule}
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
+          >
+            <CalendarClock className="h-3 w-3" /> Schedule mode
+          </button>
+          <button
+            onClick={() => submit(mode === "schedule")}
+            className="inline-flex items-center gap-1.5 rounded-md border border-white/10 bg-white/[0.1] px-3 py-1.5 text-[11px] font-medium text-foreground transition hover:bg-white/[0.16]"
+          >
+            <Send className="h-3 w-3" /> {mode === "schedule" ? "Schedule" : "Send"}
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function buildInlineBody(email: Email, mode: ComposeMode) {
+  const quoted = email.body
+    .split("\n")
+    .map((line) => `> ${line}`)
+    .join("\n");
+  const header = `On ${email.time}, ${email.from} <${email.email}> wrote:`;
+
+  if (mode === "forward")
+    return `\n\n---------- Forwarded message ----------\nFrom: ${email.from} <${email.email}>\nSubject: ${email.subject}\n\n${email.body}`;
+  return `\n\n${header}\n${quoted}`;
+}
+
+function getInlineSubject(subject: string, mode: ComposeMode) {
+  if (mode === "forward") return subject.startsWith("Fwd: ") ? subject : `Fwd: ${subject}`;
+  return subject.startsWith("Re: ") ? subject : `Re: ${subject}`;
 }
 
 function ProtocolStatus({
@@ -488,7 +641,9 @@ function ReceiptStatus({
         <CheckCheck className="h-4 w-4 text-amber-200" />
         <div className="flex-1">
           <div className="text-xs font-medium text-foreground">Read receipt pending</div>
-          <div className="text-[11px] text-muted-foreground">Send a read receipt to let them know you've seen this</div>
+          <div className="text-[11px] text-muted-foreground">
+            Send a read receipt to let them know you've seen this
+          </div>
         </div>
         {onSendReadReceipt && (
           <button
