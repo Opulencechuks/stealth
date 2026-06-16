@@ -10,6 +10,9 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AccessibilityInfo } from "./components/AccessibilityInfo";
+
+
 import type {
   DashboardNavItem,
   DashboardSection,
@@ -72,12 +75,13 @@ function AccountsContent({ accounts }: { accounts: DemoAccount[] }) {
       </p>
       <div className="overflow-hidden rounded-xl border border-white/[0.06]">
         <table className="w-full text-left text-sm">
+          <caption className="sr-only">Accounts table</caption>
           <thead>
             <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-              <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Address</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Balance</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Type</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Name</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Address</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Balance</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Type</th>
             </tr>
           </thead>
           <tbody>
@@ -114,11 +118,12 @@ function MailContent({ mail }: { mail: DemoMail[] }) {
       </p>
       <div className="overflow-hidden rounded-xl border border-white/[0.06]">
         <table className="w-full text-left text-sm">
+          <caption className="sr-only">Mail fixtures table</caption>
           <thead>
             <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-              <th className="px-4 py-3 font-medium text-muted-foreground">Subject</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Folder</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Subject</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Folder</th>
             </tr>
           </thead>
           <tbody>
@@ -195,6 +200,7 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
   const [data, setData] = useState<DemoDashboardData>(defaultDemoDashboardData);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+const [showAccessibility, setShowAccessibility] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const Icon = SECTION_ICON[activeSection];
@@ -299,8 +305,9 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
 
           <button
             onClick={() => document.getElementById("demo-data-import-input")?.click()}
-            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-foreground transition cursor-pointer"
+            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-foreground transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
             title="Import demo data from a JSON file"
+            aria-label="Import demo data"
           >
             <Upload className="h-3.5 w-3.5" />
             Import
@@ -308,14 +315,25 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
 
           <button
             onClick={handleExport}
-            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-foreground transition cursor-pointer"
+            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-foreground transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
             title="Export current demo data as a JSON file"
+            aria-label="Export demo data"
           >
             <Download className="h-3.5 w-3.5" />
             Export
           </button>
+          <button
+            onClick={() => setShowAccessibility((v) => !v)}
+            className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-1.5 text-xs font-medium text-foreground hover:bg-white/[0.06] hover:text-foreground transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+            title="Toggle accessibility guide"
+            aria-label="Accessibility guide"
+            aria-expanded={showAccessibility}
+          >
+            <Shield className="h-3.5 w-3.5" />
+            Accessibility
+          </button>
 
-          <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400">
+          <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400" aria-live="polite">
             Demo
           </span>
         </div>
@@ -338,7 +356,7 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
               aria-label={item.description}
               onClick={() => setActiveSection(item.id)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer",
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500",
                 isActive
                   ? "bg-white/[0.08] text-foreground"
                   : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
@@ -350,13 +368,14 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
           );
         })}
       </nav>
+      {showAccessibility && <AccessibilityInfo />}
 
       {/* ── Content region ── */}
       <div className="flex-1 overflow-y-auto p-6" role="tabpanel" aria-label={`${activeSection} section`}>
         <div className="mx-auto max-w-4xl">
           {/* Error and Success Alert Banners */}
           {errorMsg && (
-            <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400 flex items-center justify-between">
+            <div role="alert" aria-live="assertive" className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400 flex items-center justify-between">
               <span>{errorMsg}</span>
               <button
                 onClick={() => setErrorMsg(null)}
@@ -367,7 +386,7 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
             </div>
           )}
           {successMsg && (
-            <div className="mb-6 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400 flex items-center justify-between animate-fade-in">
+            <div role="status" aria-live="polite" className="mb-6 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400 flex items-center justify-between animate-fade-in">
               <span>{successMsg}</span>
               <button
                 onClick={() => setSuccessMsg(null)}
