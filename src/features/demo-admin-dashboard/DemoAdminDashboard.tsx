@@ -12,7 +12,6 @@ import {
 import { cn } from "@/lib/utils";
 import { AccessibilityInfo } from "./components/AccessibilityInfo";
 
-
 import type {
   DashboardNavItem,
   DashboardSection,
@@ -45,7 +44,7 @@ const SECTION_ICON: Record<DashboardSection, React.ElementType> = {
 
 // Keyboard navigation handler for the tablist
 function handleNavKeyDown(event: React.KeyboardEvent) {
-  const tabs = NAV_ITEMS.map(item => item.id);
+  const tabs = NAV_ITEMS.map((item) => item.id);
   const currentIndex = tabs.indexOf(activeSection);
   if (event.key === "ArrowRight") {
     const nextIndex = (currentIndex + 1) % tabs.length;
@@ -93,10 +92,18 @@ function AccountsContent({ accounts }: { accounts: DemoAccount[] }) {
           <caption className="sr-only">Accounts table</caption>
           <thead>
             <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Name</th>
-              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Address</th>
-              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Balance</th>
-              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Type</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                Name
+              </th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                Address
+              </th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                Balance
+              </th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                Type
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -108,7 +115,10 @@ function AccountsContent({ accounts }: { accounts: DemoAccount[] }) {
               </tr>
             ) : (
               accounts.map((acct, idx) => (
-                <tr key={`${acct.address}-${idx}`} className="border-b border-white/[0.04] last:border-0">
+                <tr
+                  key={`${acct.address}-${idx}`}
+                  className="border-b border-white/[0.04] last:border-0"
+                >
                   <td className="px-4 py-3 font-medium text-foreground">{acct.name}</td>
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
                     {acct.address}
@@ -136,9 +146,15 @@ function MailContent({ mail }: { mail: DemoMail[] }) {
           <caption className="sr-only">Mail fixtures table</caption>
           <thead>
             <tr className="border-b border-white/[0.06] bg-white/[0.02]">
-              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Subject</th>
-              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">Folder</th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                Subject
+              </th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                Status
+              </th>
+              <th scope="col" className="px-4 py-3 font-medium text-muted-foreground">
+                Folder
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -158,7 +174,7 @@ function MailContent({ mail }: { mail: DemoMail[] }) {
                         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
                         m.status === "delivered" && "bg-emerald-500/10 text-emerald-400",
                         m.status === "pending" && "bg-amber-500/10 text-amber-400",
-                        m.status === "held" && "bg-rose-500/10 text-rose-400"
+                        m.status === "held" && "bg-rose-500/10 text-rose-400",
                       )}
                     >
                       {m.status}
@@ -215,7 +231,7 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
   const [activeSection, setActiveSection] = useState<DashboardSection>("overview");
   const [data, setData] = useState<DemoDashboardData>(defaultDemoDashboardData);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-const [showAccessibility, setShowAccessibility] = useState(false);
+  const [showAccessibility, setShowAccessibility] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const Icon = SECTION_ICON[activeSection];
@@ -233,7 +249,14 @@ const [showAccessibility, setShowAccessibility] = useState(false);
     { label: "Active Accounts", value: activeAccountsCount.toString(), delta: "+2" },
     { label: "Messages Sent", value: messagesCount.toString(), delta: "+12%" },
     { label: "Pending Requests", value: pendingCount.toString(), delta: "-1" },
-    { label: "Total Balance (XLM)", value: totalBalance.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }), delta: "+45.2" },
+    {
+      label: "Total Balance (XLM)",
+      value: totalBalance.toLocaleString(undefined, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
+      delta: "+45.2",
+    },
   ];
 
   const handleExport = () => {
@@ -291,7 +314,7 @@ const [showAccessibility, setShowAccessibility] = useState(false);
     <div
       className={cn(
         "flex h-full flex-col overflow-hidden rounded-xl border border-white/[0.08] bg-black/60 backdrop-blur-xl",
-        className
+        className,
       )}
     >
       {/* ── Header ── */}
@@ -348,7 +371,10 @@ const [showAccessibility, setShowAccessibility] = useState(false);
             Accessibility
           </button>
 
-          <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400" aria-live="polite">
+          <span
+            className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-medium text-amber-400"
+            aria-live="polite"
+          >
             Demo
           </span>
         </div>
@@ -377,7 +403,7 @@ const [showAccessibility, setShowAccessibility] = useState(false);
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500",
                 isActive
                   ? "bg-white/[0.08] text-foreground"
-                  : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground"
+                  : "text-muted-foreground hover:bg-white/[0.04] hover:text-foreground",
               )}
             >
               <NavIcon className="h-3.5 w-3.5" />
@@ -389,11 +415,21 @@ const [showAccessibility, setShowAccessibility] = useState(false);
       {showAccessibility && <AccessibilityInfo />}
 
       {/* ── Content region ── */}
-      <div className="flex-1 overflow-y-auto p-6" role="tabpanel" id={`panel-${activeSection}`} aria-labelledby={`tab-${activeSection}`} aria-label={`${activeSection} section`}>
+      <div
+        className="flex-1 overflow-y-auto p-6"
+        role="tabpanel"
+        id={`panel-${activeSection}`}
+        aria-labelledby={`tab-${activeSection}`}
+        aria-label={`${activeSection} section`}
+      >
         <div className="mx-auto max-w-4xl">
           {/* Error and Success Alert Banners */}
           {errorMsg && (
-            <div role="alert" aria-live="assertive" className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400 flex items-center justify-between">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400 flex items-center justify-between"
+            >
               <span>{errorMsg}</span>
               <button
                 onClick={() => setErrorMsg(null)}
@@ -404,7 +440,11 @@ const [showAccessibility, setShowAccessibility] = useState(false);
             </div>
           )}
           {successMsg && (
-            <div role="status" aria-live="polite" className="mb-6 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400 flex items-center justify-between animate-fade-in">
+            <div
+              role="status"
+              aria-live="polite"
+              className="mb-6 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-4 text-sm text-emerald-400 flex items-center justify-between animate-fade-in"
+            >
               <span>{successMsg}</span>
               <button
                 onClick={() => setSuccessMsg(null)}
@@ -418,9 +458,7 @@ const [showAccessibility, setShowAccessibility] = useState(false);
           {/* Section header */}
           <div className="mb-6 flex items-center gap-2">
             <Icon className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground capitalize">
-              {activeSection}
-            </h3>
+            <h3 className="text-sm font-semibold text-foreground capitalize">{activeSection}</h3>
           </div>
 
           {activeSection === "overview" && <OverviewContent stats={overviewStats} />}
@@ -432,4 +470,3 @@ const [showAccessibility, setShowAccessibility] = useState(false);
     </div>
   );
 }
-

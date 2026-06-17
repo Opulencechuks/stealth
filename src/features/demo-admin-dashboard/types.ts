@@ -16,11 +16,7 @@ export interface DashboardNavItem {
 }
 
 /** The available top-level sections in the admin dashboard. */
-export type DashboardSection =
-  | "overview"
-  | "accounts"
-  | "mail"
-  | "audit";
+export type DashboardSection = "overview" | "accounts" | "mail" | "audit";
 
 /** Props passed to the dashboard shell. */
 export interface DemoAdminDashboardProps {

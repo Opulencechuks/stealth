@@ -34,21 +34,22 @@ The component has one optional prop, `className`, which is forwarded to the root
 ### Props
 
 | Prop        | Type     | Default | Description                          |
-|-------------|----------|---------|--------------------------------------|
+| ----------- | -------- | ------- | ------------------------------------ |
 | `className` | `string` | `""`    | CSS class forwarded to the root node |
 
 ### Sections
 
 The dashboard exposes four tabbed sections:
 
-| Section    | Description                                    |
-|------------|------------------------------------------------|
-| Overview   | Summary stats cards (accounts, messages, etc.) |
-| Accounts   | Table of demo Stellar accounts                 |
-| Mail       | Table of demo mail fixtures                    |
-| Audit      | Timeline of demo protocol events               |
+| Section  | Description                                    |
+| -------- | ---------------------------------------------- |
+| Overview | Summary stats cards (accounts, messages, etc.) |
+| Accounts | Table of demo Stellar accounts                 |
+| Mail     | Table of demo mail fixtures                    |
+| Audit    | Timeline of demo protocol events               |
 
 Future issues can add sections by:
+
 1. Adding a new value to the `DashboardSection` union type in `./types.ts`.
 2. Adding an entry to `NAV_ITEMS`, `SECTION_ICON`, and `SECTION_CONTENT` in `./DemoAdminDashboard.tsx`.
 3. Optionally adding fake data constants at the module level.

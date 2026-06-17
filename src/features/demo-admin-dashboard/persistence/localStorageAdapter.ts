@@ -21,7 +21,7 @@ export class LocalStorageAdapter<T> implements StorageAdapter<T> {
     } catch (e) {
       // In a demo context we simply log – production code would surface the error.
       // eslint-disable-next-line no-console
-      console.error('LocalStorageAdapter.save error', e);
+      console.error("LocalStorageAdapter.save error", e);
     }
   }
 
@@ -33,7 +33,7 @@ export class LocalStorageAdapter<T> implements StorageAdapter<T> {
       return JSON.parse(raw) as T;
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.error('LocalStorageAdapter.load error', e);
+      console.error("LocalStorageAdapter.load error", e);
       return null;
     }
   }
@@ -44,16 +44,16 @@ export class LocalStorageAdapter<T> implements StorageAdapter<T> {
       (globalThis as any).localStorage.removeItem(key);
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.error('LocalStorageAdapter.clear error', e);
+      console.error("LocalStorageAdapter.clear error", e);
     }
   }
 }
 
 // Convenience helpers for Draft state persistence
-import { Draft } from '../types/draft';
+import { Draft } from "../types/draft";
 
 const draftAdapter = new LocalStorageAdapter<Draft>();
-const DRAFT_KEY = 'demoAdminDraft';
+const DRAFT_KEY = "demoAdminDraft";
 
 export function saveDraft(draft: Draft): void {
   draftAdapter.save(DRAFT_KEY, draft);

@@ -2,9 +2,9 @@ import React, { useState } from "react";
 
 const checklist = [
   "All interactive elements are keyboard‑focusable with visible focus ring",
-  "Tables include <caption> and <th scope=\"col\" for screen readers",
+  'Tables include <caption> and <th scope="col" for screen readers',
   "Buttons have descriptive aria‑labels and focus outlines",
-  "Alert banners use role=\"alert\" or role=\"status\" with aria‑live attributes",
+  'Alert banners use role="alert" or role="status" with aria‑live attributes',
   "Color contrast meets WCAG AA standards",
   "Links have descriptive text for screen readers",
   "Images include meaningful alt attributes",
@@ -13,7 +13,10 @@ const checklist = [
 export function AccessibilityInfo() {
   const [expanded, setExpanded] = useState(false);
   return (
-    <section aria-labelledby="accessibility-guide-title" className="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
+    <section
+      aria-labelledby="accessibility-guide-title"
+      className="mb-6 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4"
+    >
       <button
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
@@ -35,7 +38,11 @@ export function AccessibilityInfo() {
       {!expanded && (
         <>
           {checklist.map((item, idx) => (
-            <li key={idx} role="listitem" className="mt-3 list-disc list-inside text-sm text-muted-foreground">
+            <li
+              key={idx}
+              role="listitem"
+              className="mt-3 list-disc list-inside text-sm text-muted-foreground"
+            >
               {item}
             </li>
           ))}
@@ -43,7 +50,11 @@ export function AccessibilityInfo() {
       )}
       {/* Expanded: render full list inside a ul */}
       {expanded && (
-        <ul id="accessibility-checklist" role="list" className="mt-3 list-disc list-inside space-y-2 text-sm text-muted-foreground">
+        <ul
+          id="accessibility-checklist"
+          role="list"
+          className="mt-3 list-disc list-inside space-y-2 text-sm text-muted-foreground"
+        >
           {checklist.map((item, idx) => (
             <li key={idx}>{item}</li>
           ))}
