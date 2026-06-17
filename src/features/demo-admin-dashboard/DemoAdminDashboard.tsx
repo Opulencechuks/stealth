@@ -34,12 +34,27 @@ const NAV_ITEMS: DashboardNavItem[] = [
 
 // ─── Section icon map ─────────────────────────────────────────────────────────
 
+// ─── Section icon map ─────────────────────────────────────────────────────────
+
 const SECTION_ICON: Record<DashboardSection, React.ElementType> = {
   overview: LayoutDashboard,
   accounts: Users,
   mail: Mail,
   audit: Activity,
 };
+
+// Keyboard navigation handler for the tablist
+function handleNavKeyDown(event: React.KeyboardEvent) {
+  const tabs = NAV_ITEMS.map(item => item.id);
+  const currentIndex = tabs.indexOf(activeSection);
+  if (event.key === "ArrowRight") {
+    const nextIndex = (currentIndex + 1) % tabs.length;
+    setActiveSection(tabs[nextIndex]);
+  } else if (event.key === "ArrowLeft") {
+    const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    setActiveSection(tabs[prevIndex]);
+  }
+}
 
 // ─── Content region components ────────────────────────────────────────────────
 
@@ -344,6 +359,7 @@ const [showAccessibility, setShowAccessibility] = useState(false);
         className="flex gap-1 border-b border-white/[0.06] px-4 py-2"
         role="tablist"
         aria-label="Admin dashboard sections"
+        onKeyDown={handleNavKeyDown}
       >
         {NAV_ITEMS.map((item) => {
           const NavIcon = SECTION_ICON[item.id];
@@ -351,9 +367,11 @@ const [showAccessibility, setShowAccessibility] = useState(false);
           return (
             <button
               key={item.id}
+              id={`tab-${item.id}`}
               role="tab"
               aria-selected={isActive}
               aria-label={item.description}
+              aria-controls={`panel-${item.id}`}
               onClick={() => setActiveSection(item.id)}
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500",
@@ -371,7 +389,7 @@ const [showAccessibility, setShowAccessibility] = useState(false);
       {showAccessibility && <AccessibilityInfo />}
 
       {/* ── Content region ── */}
-      <div className="flex-1 overflow-y-auto p-6" role="tabpanel" aria-label={`${activeSection} section`}>
+      <div className="flex-1 overflow-y-auto p-6" role="tabpanel" id={`panel-${activeSection}`} aria-labelledby={`tab-${activeSection}`} aria-label={`${activeSection} section`}>
         <div className="mx-auto max-w-4xl">
           {/* Error and Success Alert Banners */}
           {errorMsg && (
