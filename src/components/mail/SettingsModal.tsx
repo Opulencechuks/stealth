@@ -23,6 +23,16 @@ import { Surface } from "@/features/design-system";
 import { cn } from "@/lib/utils";
 import { SHORTCUT_DEFINITIONS } from "@/features/command-palette";
 import type { ReceiptPreference, UiPreferences } from "@/features/preferences";
+import {
+  MAILBOX_POLICY_TEMPLATES,
+  buildCustomMailboxPolicyTemplate,
+  findMailboxPolicyTemplate,
+  mailboxPolicyTemplateMatchesPreferences,
+  savedCustomTemplateToPreferences,
+  templateToPreferences,
+  type MailboxPolicyTemplateId,
+  type SavedMailboxPolicyTemplate,
+} from "@/features/settings/mailbox-policy-templates";
 import { AuditLog } from "@/features/audit-log";
 
 const tabs = [
@@ -125,7 +135,7 @@ export function SettingsModal({
                   <NotificationSettings preferences={preferences} onChange={onChange} />
                 )}
                 {activeTab === "inbox" && (
-                  <InboxSettings preferences={preferences} onChange={onChange} />
+                  <InboxSettings open={open} preferences={preferences} onChange={onChange} />
                 )}
                 {activeTab === "receipts" && (
                   <ReceiptSettings preferences={preferences} onChange={onChange} />
@@ -137,7 +147,8 @@ export function SettingsModal({
             </div>
             <div className="flex items-center justify-between border-t border-white/5 px-5 py-3">
               <span className="text-[11px] text-muted-foreground">
-                Preview applies immediately. Save to keep changes or cancel to restore.
+                Manual edits apply immediately. Template selections preview before apply. Save to
+                keep changes or cancel to restore.
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -417,68 +428,418 @@ function NotificationSettings({
 }
 
 function InboxSettings({
+  open,
   preferences,
   onChange,
 }: {
+  open: boolean;
   preferences: UiPreferences;
   onChange: (preferences: UiPreferences) => void;
 }) {
+  const [previewTemplateId, setPreviewTemplateId] = useState<MailboxPolicyTemplateId | "custom">(
+    () => findMailboxPolicyTemplate(preferences)?.id ?? "custom",
+  );
+  const [savedCustomTemplate, setSavedCustomTemplate] = useState<SavedMailboxPolicyTemplate | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    setPreviewTemplateId(findMailboxPolicyTemplate(preferences)?.id ?? "custom");
+  }, [open, preferences]);
+
+  const currentDraft = {
+    unknownSenders: preferences.unknownSenders,
+    minimumPostage: preferences.minimumPostage,
+  } as const;
+
+  const liveTemplate = findMailboxPolicyTemplate(currentDraft);
+
+  const selectedPreview =
+    previewTemplateId === "custom"
+      ? (savedCustomTemplate ??
+        buildCustomMailboxPolicyTemplate(currentDraft, liveTemplate?.id ?? null))
+      : (MAILBOX_POLICY_TEMPLATES.find((template) => template.id === previewTemplateId) ?? null);
+
+  const selectedPreferences =
+    previewTemplateId === "custom"
+      ? savedCustomTemplate
+        ? savedCustomTemplateToPreferences(savedCustomTemplate)
+        : currentDraft
+      : selectedPreview
+        ? templateToPreferences(selectedPreview)
+        : currentDraft;
+
+  const previewMatchesCurrent =
+    previewTemplateId === "custom"
+      ? savedCustomTemplate
+        ? savedCustomTemplate.policy.unknownSenders === preferences.unknownSenders &&
+          savedCustomTemplate.policy.minimumPostage === preferences.minimumPostage
+        : true
+      : selectedPreview
+        ? mailboxPolicyTemplateMatchesPreferences(selectedPreview, currentDraft)
+        : false;
+
+  const applyingWillReplaceCurrent =
+    previewTemplateId === "custom"
+      ? !!savedCustomTemplate && !previewMatchesCurrent
+      : !previewMatchesCurrent;
+
+  const handleTemplateChange = (id: MailboxPolicyTemplateId) => {
+    setPreviewTemplateId(id);
+  };
+
+  const handleApply = () => {
+    if (!selectedPreview) return;
+
+    if (previewTemplateId === "custom") {
+      if (!savedCustomTemplate) {
+        setSavedCustomTemplate(
+          buildCustomMailboxPolicyTemplate(currentDraft, liveTemplate?.id ?? null),
+        );
+        return;
+      }
+
+      onChange({
+        ...preferences,
+        ...savedCustomTemplateToPreferences(savedCustomTemplate),
+      });
+      return;
+    }
+
+    onChange({
+      ...preferences,
+      ...templateToPreferences(selectedPreview),
+    });
+  };
+
+  const handleSaveCustom = () => {
+    setSavedCustomTemplate(
+      buildCustomMailboxPolicyTemplate(currentDraft, liveTemplate?.id ?? null),
+    );
+    setPreviewTemplateId("custom");
+  };
+
+  const updateUnknownSenders = (unknownSenders: UiPreferences["unknownSenders"]) => {
+    setPreviewTemplateId("custom");
+    onChange({
+      ...preferences,
+      unknownSenders,
+    });
+  };
+
+  const updateMinimumPostage = (minimumPostage: string) => {
+    setPreviewTemplateId("custom");
+    onChange({
+      ...preferences,
+      minimumPostage,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-sm font-medium text-foreground">Inbox control</h3>
-        <p className="mt-1 text-xs text-muted-foreground">Choose how unknown senders reach you.</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Choose how unknown senders reach you, or preview a common inbox policy template.
+        </p>
       </div>
-      <div className="grid gap-2">
-        {[
-          {
-            value: "request",
-            label: "Request approval",
-            description: "Hold unknown senders for review.",
-          },
-          {
-            value: "verified",
-            label: "Verified only",
-            description: "Accept verified identities with postage.",
-          },
-          {
-            value: "block",
-            label: "Trusted contacts only",
-            description: "Reject every unknown sender.",
-          },
-        ].map((policy) => (
-          <button
-            key={policy.value}
-            onClick={() =>
-              onChange({
-                ...preferences,
-                unknownSenders: policy.value as UiPreferences["unknownSenders"],
-              })
-            }
-            className={cn(
-              "rounded-xl border p-3 text-left transition",
-              preferences.unknownSenders === policy.value
-                ? "border-emerald-200/20 bg-emerald-200/[0.06]"
-                : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]",
-            )}
-          >
-            <span className="block text-sm font-medium text-foreground">{policy.label}</span>
-            <span className="mt-1 block text-xs text-muted-foreground">{policy.description}</span>
-          </button>
-        ))}
-      </div>
-      <label className="block">
-        <span className="text-xs text-muted-foreground">Minimum postage</span>
-        <div className="mt-1 flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3">
-          <input
-            value={preferences.minimumPostage}
-            onChange={(event) => onChange({ ...preferences, minimumPostage: event.target.value })}
-            inputMode="decimal"
-            className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
-          />
-          <span className="text-xs text-muted-foreground">XLM</span>
+
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-foreground">Template gallery</p>
+              <p className="text-[11px] text-muted-foreground">
+                Comparison cards show each template’s tradeoff and sender experience before you
+                apply it.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            {MAILBOX_POLICY_TEMPLATES.map((template) => {
+              const selected = previewTemplateId === template.id;
+              return (
+                <button
+                  key={template.id}
+                  type="button"
+                  onClick={() => handleTemplateChange(template.id)}
+                  className={cn(
+                    "rounded-2xl border p-4 text-left transition",
+                    selected
+                      ? "border-emerald-300/30 bg-emerald-300/[0.08] shadow-[0_0_0_1px_rgba(110,231,183,0.12)]"
+                      : "border-white/10 bg-white/[0.025] hover:border-white/15 hover:bg-white/[0.05]",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">{template.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{template.summary}</p>
+                    </div>
+                    <span
+                      className={cn(
+                        "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                        selected
+                          ? "bg-emerald-400/20 text-emerald-300"
+                          : "bg-white/[0.06] text-muted-foreground",
+                      )}
+                    >
+                      {selected ? "Previewing" : "View"}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-2">
+                    <div className="rounded-xl border border-white/5 bg-black/15 px-3 py-2">
+                      <span className="block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        Tradeoff
+                      </span>
+                      <span className="mt-1 block text-foreground">{template.tradeoff}</span>
+                    </div>
+                    <div className="rounded-xl border border-white/5 bg-black/15 px-3 py-2">
+                      <span className="block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        Sender experience
+                      </span>
+                      <span className="mt-1 block text-foreground">
+                        {template.senderExperience}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => handleTemplateChange("custom")}
+              className={cn(
+                "rounded-2xl border p-4 text-left transition",
+                previewTemplateId === "custom"
+                  ? "border-sky-300/30 bg-sky-300/[0.08] shadow-[0_0_0_1px_rgba(103,232,249,0.12)]"
+                  : "border-dashed border-white/10 bg-white/[0.02] hover:border-white/15 hover:bg-white/[0.04]",
+              )}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {savedCustomTemplate?.label ?? "Custom draft"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {savedCustomTemplate?.summary ??
+                      "Your unsaved policy edits stay separate from the built-in templates."}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                    previewTemplateId === "custom"
+                      ? "bg-sky-400/20 text-sky-300"
+                      : "bg-white/[0.06] text-muted-foreground",
+                  )}
+                >
+                  {savedCustomTemplate ? "Saved" : "Local"}
+                </span>
+              </div>
+              {savedCustomTemplate ? (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 text-[11px] text-muted-foreground">
+                  <div className="rounded-xl border border-white/5 bg-black/15 px-3 py-2">
+                    <span className="block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                      Source
+                    </span>
+                    <span className="mt-1 block text-foreground">
+                      {savedCustomTemplate.sourceTemplateId ?? "Manual draft"}
+                    </span>
+                  </div>
+                  <div className="rounded-xl border border-white/5 bg-black/15 px-3 py-2">
+                    <span className="block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                      Exact values
+                    </span>
+                    <span className="mt-1 block text-foreground">
+                      {selectedPreferences.unknownSenders === "request"
+                        ? "Request approval"
+                        : selectedPreferences.unknownSenders === "verified"
+                          ? "Verified only"
+                          : "Allowlist only"}
+                      {" | "}
+                      {selectedPreferences.minimumPostage} XLM
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 text-[11px] text-muted-foreground">
+                  Click Save as custom after you tune the live policy fields.
+                </div>
+              )}
+            </button>
+          </div>
         </div>
-      </label>
+
+        <Surface variant="strong" padding="md" className="space-y-4 border border-white/10">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Policy preview
+              </p>
+              <h4 className="mt-1 text-sm font-semibold text-foreground">
+                {previewTemplateId === "custom"
+                  ? "Custom draft"
+                  : (selectedPreview?.label ?? "Mailbox policy")}
+              </h4>
+              <p className="mt-1 text-xs text-muted-foreground">{selectedPreview?.summary}</p>
+            </div>
+            <span
+              className={cn(
+                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                previewTemplateId === "custom"
+                  ? "bg-sky-400/15 text-sky-300"
+                  : "bg-emerald-400/15 text-emerald-300",
+              )}
+            >
+              {previewTemplateId === "custom" ? "Custom" : "Template"}
+            </span>
+          </div>
+
+          <div className="grid gap-3">
+            <PreviewStat
+              label="Unknown sender handling"
+              value={
+                selectedPreferences.unknownSenders === "request"
+                  ? "Request approval"
+                  : selectedPreferences.unknownSenders === "verified"
+                    ? "Verified only"
+                    : "Allowlist only"
+              }
+              meta={
+                previewTemplateId === "custom"
+                  ? "Reflects the current live policy values."
+                  : "Matches the selected template before apply."
+              }
+            />
+            <PreviewStat
+              label="Minimum postage"
+              value={`${selectedPreferences.minimumPostage} XLM`}
+              meta={
+                previewTemplateId === "custom"
+                  ? "Current draft postage value."
+                  : "Template postage used when applied."
+              }
+            />
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/15 p-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+              Sender experience
+            </p>
+            <p className="mt-1 text-sm text-foreground">{selectedPreview?.senderExperience}</p>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/15 p-3">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+              Tradeoff
+            </p>
+            <p className="mt-1 text-sm text-foreground">{selectedPreview?.tradeoff}</p>
+          </div>
+
+          {applyingWillReplaceCurrent && (
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.08] p-3">
+              <p className="text-sm font-medium text-amber-200">Explicit overwrite required</p>
+              <p className="mt-1 text-xs text-amber-100/80">
+                Applying this preview will replace the current unsaved policy draft. Your live draft
+                stays unchanged until you click Apply.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            {previewTemplateId === "custom" && !savedCustomTemplate ? (
+              <button
+                type="button"
+                onClick={handleSaveCustom}
+                className="flex-1 rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition hover:opacity-90"
+              >
+                Save as custom
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleApply}
+                className="flex-1 rounded-xl bg-foreground px-4 py-2.5 text-sm font-semibold text-background transition hover:opacity-90"
+              >
+                {previewTemplateId === "custom" ? "Apply custom template" : "Apply template"}
+              </button>
+            )}
+          </div>
+        </Surface>
+      </div>
+
+      <div className="space-y-6">
+        <div>
+          <p className="text-sm font-medium text-foreground">Policy editor</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Manual edits update the live policy draft. Template selection previews values until you
+            apply.
+          </p>
+        </div>
+
+        <div className="grid gap-2">
+          {[
+            {
+              value: "request",
+              label: "Request approval",
+              description: "Hold unknown senders for review.",
+            },
+            {
+              value: "verified",
+              label: "Verified only",
+              description: "Accept verified identities with postage.",
+            },
+            {
+              value: "block",
+              label: "Trusted contacts only",
+              description: "Reject every unknown sender.",
+            },
+          ].map((policy) => (
+            <button
+              key={policy.value}
+              onClick={() => updateUnknownSenders(policy.value as UiPreferences["unknownSenders"])}
+              className={cn(
+                "rounded-xl border p-3 text-left transition",
+                preferences.unknownSenders === policy.value
+                  ? "border-emerald-200/20 bg-emerald-200/[0.06]"
+                  : "border-white/10 bg-white/[0.025] hover:bg-white/[0.05]",
+              )}
+            >
+              <span className="block text-sm font-medium text-foreground">{policy.label}</span>
+              <span className="mt-1 block text-xs text-muted-foreground">{policy.description}</span>
+            </button>
+          ))}
+        </div>
+
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Minimum postage</span>
+          <div className="mt-1 flex items-center rounded-lg border border-white/10 bg-white/[0.04] px-3">
+            <input
+              value={preferences.minimumPostage}
+              onChange={(event) => updateMinimumPostage(event.target.value)}
+              inputMode="decimal"
+              className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
+            />
+            <span className="text-xs text-muted-foreground">XLM</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  );
+}
+
+function PreviewStat({ label, value, meta }: { label: string; value: string; meta: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/15 px-3 py-2.5">
+      <span className="block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </span>
+      <span className="mt-1 block text-sm font-medium text-foreground">{value}</span>
+      <span className="mt-1 block text-[11px] text-muted-foreground">{meta}</span>
     </div>
   );
 }
