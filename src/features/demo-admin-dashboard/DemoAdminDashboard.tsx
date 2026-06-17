@@ -10,6 +10,7 @@ import {
   Paperclip,
   PieChart,
   Shield,
+  Tags,
   Users,
   X,
 } from "lucide-react";
@@ -29,13 +30,12 @@ import type {
 import { TemplatePicker } from "./templates";
 import { PRESET_SCENARIOS } from "./fixtures/presets";
 import { CampaignSnapshots } from "./components/CampaignSnapshots";
-import type { Draft } from "./types/draft";
-import { AdminDataTable, type Column } from "./components/AdminDataTable";
-import { CampaignSnapshots } from "./components/CampaignSnapshots";
 import { ValidationResultsPanel } from "./ValidationResultsPanel";
 import { validateCampaignDrafts } from "./validation";
 import type { Draft } from "./types/draft";
 import type { ValidationNavigation } from "./validation-types";
+import { AdminDataTable, type Column } from "./components/AdminDataTable";
+import { CampaignTagManager } from "./components/CampaignTagManager";
 
 // ─── Default Deterministic fake data ──────────────────────────────────────────
 
@@ -49,6 +49,7 @@ export const NAV_ITEMS: DashboardNavItem[] = [
   { id: "campaigns", label: "Campaigns", description: "Save and restore campaign draft snapshots" },
   { id: "audit", label: "Audit", description: "Demo protocol event log" },
   { id: "analytics", label: "Analytics", description: "Privacy-preserving product analytics" },
+  { id: "tags", label: "Tags", description: "Create, edit, merge, and delete campaign tags" },
 ];
 
 const OVERVIEW_STATS: StatCard[] = [
@@ -187,6 +188,7 @@ export const SECTION_ICON: Record<DashboardSection, React.ElementType> = {
   campaigns: History,
   audit: Activity,
   analytics: PieChart,
+  tags: Tags,
 };
 
 // ─── Content region components ────────────────────────────────────────────────
@@ -687,12 +689,6 @@ function CampaignsContent({
   );
 }
 
-function CampaignsContent() {
-  const [drafts, setDrafts] = useState<Draft[]>([]);
-
-  return <CampaignSnapshots currentDataset={drafts} onRestoreDataset={setDrafts} />;
-}
-
 function AnalyticsContent() {
   return (
     <div className="space-y-4">
@@ -718,6 +714,10 @@ function AnalyticsContent() {
       </div>
     </div>
   );
+}
+
+function TagsContent() {
+  return <CampaignTagManager />;
 }
 
 // ─── Dashboard Shell ──────────────────────────────────────────────────────────
@@ -875,11 +875,11 @@ export function DemoAdminDashboard({ className }: DemoAdminDashboardProps) {
             />
           )}
 
-          {activeSection === "campaigns" && <CampaignsContent />}
-
           {activeSection === "audit" && <AuditContent auditEvents={auditEvents} />}
 
           {activeSection === "analytics" && <AnalyticsContent />}
+
+          {activeSection === "tags" && <TagsContent />}
         </div>
       </div>
 
