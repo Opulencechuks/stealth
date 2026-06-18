@@ -89,3 +89,25 @@ export type { ValidationResultsPanelProps } from "./ValidationResultsPanel";
 
 export { AdminSearchBar } from "./AdminSearchBar";
 export type { AdminSearchBarProps } from "./AdminSearchBar";
+
+export { CampaignMessageAssignmentPanel } from "./components/CampaignMessageAssignmentPanel";
+export { MessagePicker } from "./components/MessagePicker";
+
+export type { AssignableMessage, AssignmentState } from "./types/assignment";
+
+export {
+  getAssignedMessages,
+  isMessageAssigned,
+  assignMessage,
+  unassignMessage,
+  getCampaignsForMessage,
+  assignToManyCampaigns,
+} from "./utils/assignmentHelpers";
+
+export {
+  saveAssignments,
+  loadAssignments,
+  clearAssignments,
+} from "./persistence/localStorageAdapter";
+
+export { messagePool, defaultAssignmentState } from "./fixtures/assignmentFixtures";

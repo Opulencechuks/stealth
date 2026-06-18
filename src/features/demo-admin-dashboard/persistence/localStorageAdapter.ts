@@ -123,3 +123,21 @@ export function loadCampaignTags(): CampaignTag[] {
 export function clearCampaignTags(): void {
   tagAdapter.clear(TAGS_KEY);
 }
+
+// Campaign message assignment persistence
+import { AssignmentState } from "../types/assignment";
+
+const assignmentsAdapter = new LocalStorageAdapter<AssignmentState>();
+const ASSIGNMENTS_KEY = "stealth-demo-assignments";
+
+export function saveAssignments(state: AssignmentState): void {
+  assignmentsAdapter.save(ASSIGNMENTS_KEY, state);
+}
+
+export function loadAssignments(): AssignmentState | null {
+  return assignmentsAdapter.load(ASSIGNMENTS_KEY);
+}
+
+export function clearAssignments(): void {
+  assignmentsAdapter.clear(ASSIGNMENTS_KEY);
+}
