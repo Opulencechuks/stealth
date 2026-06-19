@@ -294,6 +294,7 @@ export type {
 export { CAMPAIGN_KPI_DEFINITIONS } from "./fixtures/campaignKpiFixtures";
 export {
   computeKpiProgress,
+  formatKpiTrend,
   getKpiById,
   getKpisForCampaign,
   isKpiMet,
@@ -303,9 +304,15 @@ export {
 export {
   KPI_METRIC_TOKENS,
   KPI_STATUS_TOKENS,
+  KPI_TREND_TOKENS,
   getKpiMetricToken,
   getKpiStatusToken,
+  getKpiTrendToken,
 } from "./constants/displayTokens";
+
+// Campaign analytics preview cards (issue #264)
+export { CampaignAnalyticsCard } from "./components/CampaignAnalyticsCard";
+export { CampaignAnalyticsPanel } from "./components/CampaignAnalyticsPanel";
 
 export {
   MESSAGE_FOLDERS,
