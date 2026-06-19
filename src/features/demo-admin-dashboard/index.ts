@@ -386,3 +386,23 @@ export {
 export type { DemoFolder, MailboxGroup, FolderDefinition } from "./constants/folderTaxonomy";
 export { FolderTaxonomySelector } from "./components/FolderTaxonomySelector";
 export type { FolderTaxonomySelectorProps } from "./components/FolderTaxonomySelector";
+
+// Calendar Event Editor (issue #16): editor component, types, fixtures, validation.
+export { CalendarEventEditor } from "./components/CalendarEventEditor";
+export type { CalendarEventEditorProps } from "./components/CalendarEventEditor";
+export { prepareAttendees, formatAttendeesDisplay } from "./components/CalendarEventEditor";
+export type {
+  CalendarEventEditorState,
+  CalendarResponseState,
+  CalendarResponseStateOption,
+} from "./types/calendarEvent";
+export {
+  CALENDAR_RESPONSE_STATES,
+  CALENDAR_RESPONSE_STATE_OPTIONS,
+  DEFAULT_RESPONSE_STATE,
+  getResponseStateOption,
+  calendarEventToEditorState,
+  editorStateToCalendarEvent,
+} from "./types/calendarEvent";
+export { calendarEventFixtures, defaultCalendarEvent } from "./fixtures/calendarEventFixtures";
+export { validateCalendarEventEditor } from "./calendarEventValidation";
