@@ -58,6 +58,8 @@ export {
 export { CampaignTagManager } from "./components/CampaignTagManager";
 export { MockPublishPanel } from "./components/MockPublishPanel";
 export type { MockPublishPanelProps } from "./components/MockPublishPanel";
+export { CampaignDiffPanel } from "./components/CampaignDiffPanel";
+export type { CampaignDiffPanelProps } from "./components/CampaignDiffPanel";
 export {
   canRetryMockPublish,
   canRollbackMockPublish,
@@ -72,6 +74,19 @@ export type {
   MockPublishStatus,
   MockPublishStep,
 } from "./mockPublishWorkflow";
+export {
+  compareCampaignSnapshots,
+  formatCampaignDiffSummary,
+  getCampaignDiffEntriesByKind,
+  summarizeCampaignDiff,
+} from "./campaignDiff";
+export type {
+  CampaignDiffEntry,
+  CampaignDiffKind,
+  CampaignDiffResult,
+  CampaignDiffSection,
+  CampaignDiffSummary,
+} from "./campaignDiff";
 
 export {
   createTag,
