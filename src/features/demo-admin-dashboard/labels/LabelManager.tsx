@@ -121,7 +121,9 @@ export function LabelManager({
               className="flex items-center justify-between gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2"
             >
               <span className="flex items-center gap-2">
-                <span className={cn("rounded-md px-2 py-0.5 text-xs ring-1", labelClasses(label.color))}>
+                <span
+                  className={cn("rounded-md px-2 py-0.5 text-xs ring-1", labelClasses(label.color))}
+                >
                   {label.name}
                 </span>
                 <span className="text-xs text-foreground/50">
@@ -201,4 +203,4 @@ export function LabelManager({
       </div>
     </div>
   );
-                                                                 }
+}
