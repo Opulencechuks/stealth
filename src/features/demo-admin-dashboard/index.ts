@@ -494,3 +494,10 @@ export type {
   QuickFixKind,
   QuickFixRegistry,
 } from "./types/quickFix";
+// Scenario registry and loader (issue #216): load demo scenarios into draft state.
+export {
+  createScenarioRegistry,
+  demoScenarios,
+  loadScenarioIntoDraft,
+} from "./helpers/scenarioRegistry";
+export type { DemoScenario, ScenarioLoadMode, ScenarioRegistry } from "./types/scenario";
