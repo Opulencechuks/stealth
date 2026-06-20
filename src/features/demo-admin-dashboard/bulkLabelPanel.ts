@@ -87,7 +87,10 @@ export function applyBulkLabelEdit(
     changes.push({ id: message.id, subject: message.subject, applied, skipped });
     return applied.length === 0
       ? message
-      : { ...message, labels: message.labels.filter((l) => !applied.some((a) => toLabelId(a) === toLabelId(l))) };
+      : {
+          ...message,
+          labels: message.labels.filter((l) => !applied.some((a) => toLabelId(a) === toLabelId(l))),
+        };
   });
 
   const affectedCount = changes.filter((change) => change.applied.length > 0).length;

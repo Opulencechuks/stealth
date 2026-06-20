@@ -33,7 +33,7 @@ interface LabelState {
 /**
  * BulkLabelPanel allows admins to add or remove labels across multiple
  * selected demo messages.
- * 
+ *
  * Features:
  * - Shows labels common to all selected messages
  * - Shows labels present on some messages (partial state)
@@ -66,12 +66,10 @@ export function BulkLabelPanel({
     }
 
     const labelId = toLabelId(normalized);
-    
+
     // Check if label already exists (case-insensitive)
-    const existingLabel = availableLabels.find(
-      label => toLabelId(label) === labelId
-    );
-    
+    const existingLabel = availableLabels.find((label) => toLabelId(label) === labelId);
+
     if (existingLabel) {
       // Label already exists, toggle it for addition
       toggleLabelForAdd(existingLabel);
@@ -80,14 +78,14 @@ export function BulkLabelPanel({
     }
 
     // Add the new label to selected messages
-    const messageIds = selectedMessages.map(msg => msg.id);
+    const messageIds = selectedMessages.map((msg) => msg.id);
     onApply(messageIds, "add", [normalized]);
     setNewLabelInput("");
     showFeedback("success", `Added label "${normalized}" to ${messageIds.length} message(s)`);
   };
 
   const toggleLabelForAdd = (label: string) => {
-    setSelectedForAdd(prev => {
+    setSelectedForAdd((prev) => {
       const next = new Set(prev);
       if (next.has(label)) {
         next.delete(label);
@@ -97,7 +95,7 @@ export function BulkLabelPanel({
       return next;
     });
     // Clear from remove selection if present
-    setSelectedForRemove(prev => {
+    setSelectedForRemove((prev) => {
       const next = new Set(prev);
       next.delete(label);
       return next;
@@ -105,7 +103,7 @@ export function BulkLabelPanel({
   };
 
   const toggleLabelForRemove = (label: string) => {
-    setSelectedForRemove(prev => {
+    setSelectedForRemove((prev) => {
       const next = new Set(prev);
       if (next.has(label)) {
         next.delete(label);
@@ -115,7 +113,7 @@ export function BulkLabelPanel({
       return next;
     });
     // Clear from add selection if present
-    setSelectedForAdd(prev => {
+    setSelectedForAdd((prev) => {
       const next = new Set(prev);
       next.delete(label);
       return next;
@@ -128,11 +126,14 @@ export function BulkLabelPanel({
       return;
     }
 
-    const messageIds = selectedMessages.map(msg => msg.id);
+    const messageIds = selectedMessages.map((msg) => msg.id);
     const labelsToAdd = Array.from(selectedForAdd);
     onApply(messageIds, "add", labelsToAdd);
     setSelectedForAdd(new Set());
-    showFeedback("success", `Added ${labelsToAdd.length} label(s) to ${messageIds.length} message(s)`);
+    showFeedback(
+      "success",
+      `Added ${labelsToAdd.length} label(s) to ${messageIds.length} message(s)`,
+    );
   };
 
   const applyRemoveLabels = () => {
@@ -141,11 +142,14 @@ export function BulkLabelPanel({
       return;
     }
 
-    const messageIds = selectedMessages.map(msg => msg.id);
+    const messageIds = selectedMessages.map((msg) => msg.id);
     const labelsToRemove = Array.from(selectedForRemove);
     onApply(messageIds, "remove", labelsToRemove);
     setSelectedForRemove(new Set());
-    showFeedback("success", `Removed ${labelsToRemove.length} label(s) from ${messageIds.length} message(s)`);
+    showFeedback(
+      "success",
+      `Removed ${labelsToRemove.length} label(s) from ${messageIds.length} message(s)`,
+    );
   };
 
   const showFeedback = (type: "success" | "error", message: string) => {
@@ -188,7 +192,7 @@ export function BulkLabelPanel({
             "flex items-center gap-2 p-3 rounded-lg border",
             feedback.type === "success"
               ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800"
-              : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+              : "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800",
           )}
         >
           {feedback.type === "success" ? (
@@ -218,11 +222,7 @@ export function BulkLabelPanel({
             }}
             className="flex-1"
           />
-          <Button
-            onClick={handleAddNewLabel}
-            disabled={!newLabelInput.trim()}
-            size="sm"
-          >
+          <Button onClick={handleAddNewLabel} disabled={!newLabelInput.trim()} size="sm">
             <Plus className="h-4 w-4 mr-1" />
             Add
           </Button>
@@ -242,11 +242,7 @@ export function BulkLabelPanel({
               Common Labels ({labelState.common.length})
             </Label>
             {selectedForRemove.size > 0 && (
-              <Button
-                onClick={applyRemoveLabels}
-                variant="destructive"
-                size="sm"
-              >
+              <Button onClick={applyRemoveLabels} variant="destructive" size="sm">
                 Remove Selected ({selectedForRemove.size})
               </Button>
             )}
@@ -264,9 +260,7 @@ export function BulkLabelPanel({
                   onClick={() => toggleLabelForRemove(label)}
                 >
                   {label}
-                  {selectedForRemove.has(label) && (
-                    <X className="h-3 w-3 ml-1" />
-                  )}
+                  {selectedForRemove.has(label) && <X className="h-3 w-3 ml-1" />}
                 </Badge>
               ))}
             </div>
@@ -284,20 +278,12 @@ export function BulkLabelPanel({
             {(selectedForAdd.size > 0 || selectedForRemove.size > 0) && (
               <div className="flex gap-2">
                 {selectedForAdd.size > 0 && (
-                  <Button
-                    onClick={applyAddLabels}
-                    variant="default"
-                    size="sm"
-                  >
+                  <Button onClick={applyAddLabels} variant="default" size="sm">
                     Add Selected ({selectedForAdd.size})
                   </Button>
                 )}
                 {selectedForRemove.size > 0 && (
-                  <Button
-                    onClick={applyRemoveLabels}
-                    variant="destructive"
-                    size="sm"
-                  >
+                  <Button onClick={applyRemoveLabels} variant="destructive" size="sm">
                     Remove Selected ({selectedForRemove.size})
                   </Button>
                 )}
@@ -305,7 +291,8 @@ export function BulkLabelPanel({
             )}
           </div>
           <p className="text-xs text-muted-foreground">
-            These labels exist on some but not all selected messages. Click to add to all, or click the X to remove from all.
+            These labels exist on some but not all selected messages. Click to add to all, or click
+            the X to remove from all.
           </p>
           <ScrollArea className="h-32">
             <div className="flex flex-wrap gap-2">
@@ -316,19 +303,19 @@ export function BulkLabelPanel({
                   <Badge
                     key={label}
                     variant={
-                      isMarkedForAdd ? "default" :
-                      isMarkedForRemove ? "destructive" :
-                      "outline"
+                      isMarkedForAdd ? "default" : isMarkedForRemove ? "destructive" : "outline"
                     }
                     className={cn(
                       "transition-colors",
-                      (!isMarkedForAdd && !isMarkedForRemove) && "cursor-pointer border-dashed hover:border-solid"
+                      !isMarkedForAdd &&
+                        !isMarkedForRemove &&
+                        "cursor-pointer border-dashed hover:border-solid",
                     )}
                     onClick={() => {
                       if (!isMarkedForAdd && !isMarkedForRemove) {
                         toggleLabelForAdd(label);
                       } else if (isMarkedForAdd) {
-                        setSelectedForAdd(prev => {
+                        setSelectedForAdd((prev) => {
                           const next = new Set(prev);
                           next.delete(label);
                           return next;
@@ -372,11 +359,7 @@ export function BulkLabelPanel({
               Available Labels ({labelState.available.length})
             </Label>
             {selectedForAdd.size > 0 && (
-              <Button
-                onClick={applyAddLabels}
-                variant="default"
-                size="sm"
-              >
+              <Button onClick={applyAddLabels} variant="default" size="sm">
                 Add Selected ({selectedForAdd.size})
               </Button>
             )}
@@ -394,9 +377,7 @@ export function BulkLabelPanel({
                   onClick={() => toggleLabelForAdd(label)}
                 >
                   {label}
-                  {selectedForAdd.has(label) && (
-                    <CheckCircle2 className="h-3 w-3 ml-1" />
-                  )}
+                  {selectedForAdd.has(label) && <CheckCircle2 className="h-3 w-3 ml-1" />}
                 </Badge>
               ))}
             </div>
@@ -404,11 +385,13 @@ export function BulkLabelPanel({
         </div>
       )}
 
-      {labelState.available.length === 0 && labelState.common.length === 0 && labelState.partial.length === 0 && (
-        <div className="p-6 text-center text-sm text-muted-foreground">
-          No labels available. Create a new label above to get started.
-        </div>
-      )}
+      {labelState.available.length === 0 &&
+        labelState.common.length === 0 &&
+        labelState.partial.length === 0 && (
+          <div className="p-6 text-center text-sm text-muted-foreground">
+            No labels available. Create a new label above to get started.
+          </div>
+        )}
     </div>
   );
 }
@@ -418,13 +401,15 @@ export function BulkLabelPanel({
  */
 export function calculateLabelState(
   selectedMessages: DemoMessage[],
-  availableLabels: string[]
+  availableLabels: string[],
 ): LabelState {
   if (selectedMessages.length === 0) {
     return {
       common: [],
       partial: [],
-      available: [...new Set(availableLabels.map((label) => normalizeLabelName(label)).filter(Boolean))].sort(),
+      available: [
+        ...new Set(availableLabels.map((label) => normalizeLabelName(label)).filter(Boolean)),
+      ].sort(),
     };
   }
 

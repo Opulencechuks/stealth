@@ -23,11 +23,11 @@ flows, network calls, or data outside this folder.
 
 The `calculateLabelState` helper categorizes labels into three groups:
 
-| Category   | Description |
-|------------|-------------|
-| **Common** | Labels present on every selected message. Click to mark for removal. |
-| **Partial**| Labels present on some but not all selected messages. Click to add to all, or click the X to remove from all. |
-| **Available**| Labels present on none of the selected messages. Click to select for addition. |
+| Category      | Description                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Common**    | Labels present on every selected message. Click to mark for removal.                                          |
+| **Partial**   | Labels present on some but not all selected messages. Click to add to all, or click the X to remove from all. |
+| **Available** | Labels present on none of the selected messages. Click to select for addition.                                |
 
 ## Duplicate prevention
 

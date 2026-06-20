@@ -38,7 +38,10 @@ function sampleMessages(): DemoMessage[] {
 
 describe("normalizeLabelsForBulk", () => {
   it("deduplicates case-insensitively", () => {
-    expect(normalizeLabelsForBulk(["Priority", "priority", "Archive"])).toEqual(["priority", "archive"]);
+    expect(normalizeLabelsForBulk(["Priority", "priority", "Archive"])).toEqual([
+      "priority",
+      "archive",
+    ]);
   });
 
   it("drops blank and empty labels", () => {
@@ -80,7 +83,12 @@ describe("applyBulkLabelEdit - remove", () => {
   });
 
   it("skips labels not present on any selected message", () => {
-    const result = applyBulkLabelEdit(sampleMessages(), ["m1"], ["archive", "nonexistent"], "remove");
+    const result = applyBulkLabelEdit(
+      sampleMessages(),
+      ["m1"],
+      ["archive", "nonexistent"],
+      "remove",
+    );
 
     expect(result.messages[0].labels).toEqual(["priority", "review"]);
     expect(result.changes[0].applied).toEqual(["archive"]);
