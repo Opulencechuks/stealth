@@ -488,6 +488,21 @@ export {
 export { demoLabels, labeledDemoMessages } from "./labels/labelFixtures";
 export { LabelManager } from "./labels/LabelManager";
 
+// Bulk label panel (issue #40): add/remove labels across selected demo messages.
+export { BulkLabelPanel, calculateLabelState } from "./components/BulkLabelPanel";
+export type { BulkLabelPanelProps } from "./components/BulkLabelPanel";
+export {
+  applyBulkLabelEdit,
+  normalizeLabelsForBulk,
+  summarizeBulkLabelEdit,
+} from "./bulkLabelPanel";
+export type {
+  BulkLabelAuditSummary,
+  BulkLabelEditResult,
+  BulkLabelMessageChange,
+  BulkLabelOperation,
+} from "./bulkLabelPanel";
+
 // Draft dataset JSON import (issue #272): JSON -> safe drafts mapper with error output.
 export { mapImportedDataset, parseDatasetImport } from "./helpers/datasetImport";
 export type { DatasetImportIssue, DatasetImportResult } from "./types/datasetImport";
